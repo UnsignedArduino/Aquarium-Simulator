@@ -217,6 +217,34 @@ function summon_thing (x: number, y: number, species: string, regular_image: Ima
     sprites.setDataImage(sprite_thing, "regular_image", regular_image)
     sprites.setDataImage(sprite_thing, "selected_image", selected_image)
 }
+function complex_menu(group_list: string[], subgroup_list: string[]): blockObject.BlockObject {
+    while (true) {
+        blockMenu.showMenu(group_list, MenuStyle.List, MenuLocation.FullScreen)
+        wait_for_menu_select()
+        blockMenu.closeMenu()
+        if (blockMenu.selectedMenuOption() == "Cancel") {
+            break
+        } else {
+            let subgroup_list_block: blockObject.BlockObject[] = []
+            let subgroup_list_string: string[] = []
+            for (let block_obj of subgroup_list) {
+                if (blockObject.getNumberProperty(block_obj, NumProp.group) == blockMenu.selectedMenuIndex() - 1) {
+                    subgroup_list_block.push(block_obj)
+                    subgroup_list_string.push(blockObject.getStringProperty(block_obj, StrProp.name))
+                }
+            }
+            blockMenu.showMenu(subgroup_list_string, MenuStyle.List, MenuLocation.FullScreen)
+            wait_for_menu_select()
+            blockMenu.closeMenu()
+            if (blockMenu.selectedMenuOption() == "Cancel") {
+                // Go back to beginning
+            } else {
+                return subgroup_list_block[blockMenu.selectedMenuIndex() - 1]
+            }
+        }
+    }
+    return null
+}
 let last_selected_thing: Sprite = null
 let last_overlapped_thing: Sprite = null
 let sprite_cursor: Sprite = sprites.create(img`
