@@ -28,34 +28,36 @@ controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
         . . . . . f e f . . 
         . . . . . . f . . . 
         `)
-    // If we have actually overlapped a thing
-    if (last_overlapped_thing) {
-        selected_thing = !(selected_thing)
-    }
-    // If we have overlapped something
-    if (last_overlapped_thing) {
-        last_selected_thing = last_overlapped_thing
-    }
-    // If we have selected something
-    if (last_selected_thing && selected_thing) {
-        sprite_cursor.setImage(img`
-            2 . . . . . . . . .
-            f f . . . . . . . .
-            f 5 f . . . . . . .
-            f 5 5 f . . . . . .
-            f 5 5 5 f . . . . .
-            f 5 5 5 5 f . . . .
-            f 5 5 5 5 5 f . . .
-            f 5 5 5 5 5 5 f . .
-            f 5 5 5 5 5 5 5 f .
-            f 5 5 f 5 f f f f f
-            f 5 f f 5 f . . . .
-            f f . . f 5 f . . .
-            f . . . f 5 f . . .
-            . . . . . f 5 f . .
-            . . . . . f 5 f . .
-            . . . . . . f . . .
-        `)
+    if (enable_selection && !moving_something) {
+        // If we have actually overlapped a thing
+        if (last_overlapped_thing) {
+            selected_thing = !selected_thing
+        }
+        // If we have overlapped something
+        if (last_overlapped_thing && selected_thing) {
+            last_selected_thing = last_overlapped_thing
+        }
+        // If we have selected something
+        if (last_selected_thing && selected_thing) {
+            sprite_cursor.setImage(img`
+                2 . . . . . . . . .
+                f f . . . . . . . .
+                f 5 f . . . . . . .
+                f 5 5 f . . . . . .
+                f 5 5 5 f . . . . .
+                f 5 5 5 5 f . . . .
+                f 5 5 5 5 5 f . . .
+                f 5 5 5 5 5 5 f . .
+                f 5 5 5 5 5 5 5 f .
+                f 5 5 f 5 f f f f f
+                f 5 f f 5 f . . . .
+                f f . . f 5 f . . .
+                f . . . f 5 f . . .
+                . . . . . f 5 f . .
+                . . . . . f 5 f . .
+                . . . . . . f . . .
+            `)
+        }
     }
 })
 controller.A.onEvent(ControllerButtonEvent.Released, function () {
@@ -100,9 +102,41 @@ controller.A.onEvent(ControllerButtonEvent.Released, function () {
             `)
     }
 })
+controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
+    last_selected_thing.follow(sprite_cursor_pointer, 0)
+    moving_something = false
+    selected_thing = false
+})
 controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
-    if (selected_thing) {
+    enable_selection = false
+    if (selected_thing && !moving_something) {
         // Open menu for thing
+        blockMenu.showMenu(["Cancel", "Move...", "Set Z index", "Remove"], MenuStyle.List, MenuLocation.FullScreen)
+        wait_for_menu_select()
+        blockMenu.closeMenu()
+        if (blockMenu.selectedMenuIndex() == 0) {
+            // Do nothing
+        } else if (blockMenu.selectedMenuIndex() == 1) {
+            game.showLongText("Press [B] to place the sprite down", DialogLayout.Bottom)
+            last_selected_thing.follow(sprite_cursor_pointer, 256)
+            moving_something = true
+        } else if (blockMenu.selectedMenuIndex() == 2) {
+            // Bring number dialog up and set Z index
+            let z_index = game.askForNumber("Please enter a Z index: (-1 to cancel)", 3)
+            if (z_index == -1) {
+                game.showLongText("Canceled.", DialogLayout.Bottom)
+            } else if (z_index < 0) {
+                game.showLongText("Invalid Z index!", DialogLayout.Bottom)
+            } else {
+                last_selected_thing.z = z_index
+                game.showLongText("Successfully set Z index!", DialogLayout.Bottom)
+            }
+        } else if (blockMenu.selectedMenuIndex() == 3) {
+            // Ask to destroy it
+            if (game.ask("Are you sure you want", "to remove this thing?")) {
+                last_selected_thing.destroy(effects.fountain, 100)
+            }
+        }
     } else {
         // You clicked on background
         blockMenu.showMenu(["Cancel", "Add a thing...", "Clear everything"], MenuStyle.List, MenuLocation.FullScreen)
@@ -117,11 +151,13 @@ controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
             wait_for_menu_select()
             blockMenu.closeMenu()
             if (blockMenu.selectedMenuOption() == "Cancel") {
-                return
+                // Do nothing
+            } else {
+                let regular_image: Image = blockObject.getImageProperty(shop_list[blockMenu.selectedMenuIndex() - 1], ImageProp.regular_image)
+                let selected_image: Image = blockObject.getImageProperty(shop_list[blockMenu.selectedMenuIndex() - 1], ImageProp.selected_image)
+                let name: string = blockObject.getStringProperty(shop_list[blockMenu.selectedMenuIndex() - 1], StrProp.name)
+                summon_thing(sprite_cursor_pointer.x, sprite_cursor_pointer.top, name, regular_image, selected_image)
             }
-            let regular_image: Image = blockObject.getImageProperty(shop_list[blockMenu.selectedMenuIndex() - 1], ImageProp.regular_image)
-            let selected_image: Image = blockObject.getImageProperty(shop_list[blockMenu.selectedMenuIndex() - 1], ImageProp.selected_image)
-        summon_thing(sprite_cursor_pointer.x, sprite_cursor_pointer.y, regular_image, selected_image)
         } else if (blockMenu.selectedMenuIndex() == 2) {
             // Ask to clear everything
             if (game.ask("Are you sure you want", "to clear everything?") && game.ask("Are you REALLY SURE?", "You can't go back!")) {
@@ -132,6 +168,7 @@ controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
             }
         }
     }
+    enable_selection = true
 })
 blockMenu.onMenuOptionSelected(function (option, index) {
     selected_menu_option = true
@@ -155,10 +192,11 @@ function define_thing (name: string, regular_image: Image, selected_image: Image
     shop_list_names.push(name)
     return thing_object
 }
-function summon_thing (x: number, y: number, regular_image: Image, selected_image: Image) {
+function summon_thing (x: number, y: number, species: string, regular_image: Image, selected_image: Image) {
     // Sumon the thing
     let sprite_thing: Sprite = sprites.create(regular_image, SpriteKind.Thing)
     sprite_thing.setPosition(x, y)
+    sprites.setDataString(sprite_thing, "species", species)
     sprites.setDataImage(sprite_thing, "regular_image", regular_image)
     sprites.setDataImage(sprite_thing, "selected_image", selected_image)
 }
@@ -182,53 +220,57 @@ let sprite_cursor: Sprite = sprites.create(img`
     . . . . . f 1 f . . 
     . . . . . . f . . . 
     `, SpriteKind.Player)
+sprite_cursor.z = 1000
 controller.moveSprite(sprite_cursor, 100, 100)
 let sprite_cursor_pointer = sprites.create(img`
     f 
     `, SpriteKind.Pointer)
+sprite_cursor_pointer.z = 1000
 let selected_thing: boolean = false
 let selected_menu_option: boolean = false
+let enable_selection: boolean = true
+let moving_something: boolean = false
 let shop_list_names: string[] = ["Cancel"]
 let shop_list: blockObject.BlockObject[] = [
     define_thing("Small Rock", img`
-        . . c c c c . . 
-        . c b d d d c . 
-        c b d d d d d c 
-        c b b d d d d c 
-        c b d b d d b c 
-        c c b d b b b c 
-        c c c b d d b c 
-        c c b b c c c c 
-        `, img`
-        . . 5 5 5 5 5 5 . . 
-        . 5 5 c c c c 5 5 . 
-        5 5 c b d d d c 5 5 
-        5 c b d d d d d c 5 
-        5 c b b d d d d c 5 
-        5 c b d b d d b c 5 
-        5 c c b d b b b c 5 
-        5 c c c b d d b c 5 
-        5 c c b b c c c c 5 
-        5 5 5 5 5 5 5 5 5 5 
-        `),
+        . . c c c c . .
+        . c b d d d c .
+        c b d d d d d c
+        c b b d d d d c
+        c b d b d d b c
+        c c b d b b b c
+        c c c b d d b c
+        c c b b c c c c
+    `, img`
+        . . 5 5 5 5 5 5 . .
+        . 5 5 c c c c 5 5 .
+        5 5 c b d d d c 5 5
+        5 c b d d d d d c 5
+        5 c b b d d d d c 5
+        5 c b d b d d b c 5
+        5 c c b d b b b c 5
+        5 c c c b d d b c 5
+        5 c c b b c c c c 5
+        5 5 5 5 5 5 5 5 5 5
+    `),
     define_thing("Medium Rock", img`
-        . . . . . . . . b b b b b . . . 
-        . . . . . . b b d d d d b b . . 
-        . . . . . b d d d d d d d c . . 
-        . . . . c d d d d d d d d c . . 
-        . . . c b d d d d d d d b c c . 
-        . . . c b b d d d d b c c c c . 
-        . . c c d b b b c c c c c c c . 
-        . . c c c d d d d c c d d d c c 
-        . c d b c c b b c c d d d d d c 
-        . c b d d b b b c c d d d d d c 
-        . c c b b b b c b c b d d d b c 
-        c b b c c c c c b b b b b c c c 
-        c c b b c c c c c d d d d d b c 
-        c c c c c c b b b b b c c c c c 
-        c c c c c c c b b b b b c c c c 
-        c c c c c c c c b b b b b c c c 
-        `, img`
+        . . . . . . . . b b b b b . . .
+        . . . . . . b b d d d d b b . .
+        . . . . . b d d d d d d d c . .
+        . . . . c d d d d d d d d c . .
+        . . . c b d d d d d d d b c c .
+        . . . c b b d d d d b c c c c .
+        . . c c d b b b c c c c c c c .
+        . . c c c d d d d c c d d d c c
+        . c d b c c b b c c d d d d d c
+        . c b d d b b b c c d d d d d c
+        . c c b b b b c b c b d d d b c
+        c b b c c c c c b b b b b c c c
+        c c b b c c c c c d d d d d b c
+        c c c c c c b b b b b c c c c c
+        c c c c c c c b b b b b c c c c
+        c c c c c c c c b b b b b c c c
+    `, img`
         ........5555555...
         ......555bbbbb55..
         .....55bbddddbb5..
@@ -247,7 +289,7 @@ let shop_list: blockObject.BlockObject[] = [
         5cccccccbbbbbcccc5
         5ccccccccbbbbbccc5
         555555555555555555
-        `),
+    `),
     define_thing("Big Rock", img`
         ......ccccc.............
         ....bb33bbbcc3..........
@@ -263,7 +305,7 @@ let shop_list: blockObject.BlockObject[] = [
         cbbbddb33cbbbcdddddcbbcc
         .cbbbbbbcbbbccbdddcbbccc
         .cccbbbbbbbccccbbbbbcccc
-        `, img`
+    `, img`
         ......5555555.............
         ....555ccccc5555..........
         ...55bb33bbbcc35..........
@@ -280,7 +322,7 @@ let shop_list: blockObject.BlockObject[] = [
         55cbbbbbbcbbbccbdddcbbccc5
         .5cccbbbbbbbccccbbbbbcccc5
         .5555555555555555555555555
-        `),
+    `),
     define_thing("Small Kelp", img`
         ................
         ................
@@ -330,7 +372,7 @@ let shop_list: blockObject.BlockObject[] = [
         ....8776768.....
         .....87678......
         ......8768......
-        `, img`
+    `, img`
         ................
         ................
         ................
@@ -380,7 +422,7 @@ let shop_list: blockObject.BlockObject[] = [
         ...558767855....
         ....5587685.....
         .....555555.....
-        `),
+    `),
     define_thing("Medium Kelp", img`
         ................
         ................
@@ -430,7 +472,7 @@ let shop_list: blockObject.BlockObject[] = [
         .87766778868....
         ..877667688.....
         ...86767788.....
-        `, img`
+    `, img`
         ..................
         ..................
         ..................
@@ -480,7 +522,7 @@ let shop_list: blockObject.BlockObject[] = [
         .5587766768855....
         ..55867677885.....
         ...5555555555.....
-        `),
+    `),
     define_thing("Big Kelp", img`
         ....88..........
         ....868.........
@@ -530,7 +572,7 @@ let shop_list: blockObject.BlockObject[] = [
         .......87667668.
         ........876768..
         ........87688...
-        `, img`
+    `, img`
         ....5555..........
         ....58855.........
         ....586855........
@@ -581,7 +623,7 @@ let shop_list: blockObject.BlockObject[] = [
         .......5587676855.
         ........58768855..
         ........5555555...
-        `)
+    `)
 ]
 blockMenu.setColors(1, 15)
 scene.setBackgroundColor(9)
