@@ -10,24 +10,6 @@ namespace ImageProp {
     export const regular_image = ImageProp.create()
 }
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
-    sprite_cursor.setImage(img`
-        2 . . . . . . . . . 
-        f f . . . . . . . . 
-        f e f . . . . . . . 
-        f e e f . . . . . . 
-        f e e e f . . . . . 
-        f e e e e f . . . . 
-        f e e e e e f . . . 
-        f e e e e e e f . . 
-        f e e e e e e e f . 
-        f e e f e f f f f f 
-        f e f f e f . . . . 
-        f f . . f e f . . . 
-        f . . . f e f . . . 
-        . . . . . f e f . . 
-        . . . . . f e f . . 
-        . . . . . . f . . . 
-        `)
     if (enable_selection && !moving_something) {
         // If we have actually overlapped a thing
         if (last_overlapped_thing) {
@@ -83,23 +65,23 @@ controller.A.onEvent(ControllerButtonEvent.Released, function () {
         `)
     } else {
         sprite_cursor.setImage(img`
-        2 . . . . . . . . . 
-        f f . . . . . . . . 
-        f 1 f . . . . . . . 
-        f 1 1 f . . . . . . 
-        f 1 1 1 f . . . . . 
-        f 1 1 1 1 f . . . . 
-        f 1 1 1 1 1 f . . . 
-        f 1 1 1 1 1 1 f . . 
-        f 1 1 1 1 1 1 1 f . 
-        f 1 1 f 1 f f f f f 
-        f 1 f f 1 f . . . . 
-        f f . . f 1 f . . . 
-        f . . . f 1 f . . . 
-        . . . . . f 1 f . . 
-        . . . . . f 1 f . . 
-        . . . . . . f . . . 
-            `)
+            2 . . . . . . . . .
+            f f . . . . . . . .
+            f 1 f . . . . . . .
+            f 1 1 f . . . . . .
+            f 1 1 1 f . . . . .
+            f 1 1 1 1 f . . . .
+            f 1 1 1 1 1 f . . .
+            f 1 1 1 1 1 1 f . .
+            f 1 1 1 1 1 1 1 f .
+            f 1 1 f 1 f f f f f
+            f 1 f f 1 f . . . .
+            f f . . f 1 f . . .
+            f . . . f 1 f . . .
+            . . . . . f 1 f . .
+            . . . . . f 1 f . .
+            . . . . . . f . . .
+        `)
     }
 })
 controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
@@ -111,18 +93,33 @@ controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
     enable_selection = false
     if (selected_thing && !moving_something) {
         // Open menu for thing
-        blockMenu.showMenu(["Cancel", "Move...", "Set Z index", "Remove"], MenuStyle.List, MenuLocation.FullScreen)
+        blockMenu.showMenu(["Cancel", "Move...", "Move by", "Move to", "Set Z index", "Get attributes", "Remove"], MenuStyle.List, MenuLocation.FullScreen)
         wait_for_menu_select()
         blockMenu.closeMenu()
         if (blockMenu.selectedMenuIndex() == 0) {
             // Do nothing
         } else if (blockMenu.selectedMenuIndex() == 1) {
+            // Have thing follow the cursor until B is pressed
             game.showLongText("Press [B] to place the sprite down", DialogLayout.Bottom)
             last_selected_thing.follow(sprite_cursor_pointer, 256)
             moving_something = true
         } else if (blockMenu.selectedMenuIndex() == 2) {
+            // Move the thing by X and Y number of pixels in respective axes
+            let move_x = game.askForNumber("Enter the number of pixels to move: (X axis)", 3)
+            let move_y = game.askForNumber("Enter the number of pixels to move: (Y axis)", 3)
+            last_selected_thing.x += move_x
+            last_selected_thing.y += move_y
+            game.showLongText("Successfully moved thing!", DialogLayout.Bottom)
+        } else if (blockMenu.selectedMenuIndex() == 3) {
+            // Move the thing to X and Y cordinates
+            let set_x = game.askForNumber("Enter the X cordinate:", 3)
+            let set_y = game.askForNumber("Enter the Y cordinate:", 3)
+            last_selected_thing.x = set_x
+            last_selected_thing.y = set_y
+            game.showLongText("Successfully moved thing!", DialogLayout.Bottom)
+        } else if (blockMenu.selectedMenuIndex() == 4) {
             // Bring number dialog up and set Z index
-            let z_index = game.askForNumber("Please enter a Z index: (-1 to cancel)", 3)
+            let z_index = game.askForNumber("Enter a Z index to set:", 3)
             if (z_index == -1) {
                 game.showLongText("Canceled.", DialogLayout.Bottom)
             } else if (z_index < 0) {
@@ -131,14 +128,22 @@ controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
                 last_selected_thing.z = z_index
                 game.showLongText("Successfully set Z index!", DialogLayout.Bottom)
             }
-        } else if (blockMenu.selectedMenuIndex() == 3) {
+        } else if (blockMenu.selectedMenuIndex() == 5) {
+            // Show attributes about it
+            // Attributes shown: X, Y, Z
+            let attributes = "Attributes about: '" + sprites.readDataString(last_selected_thing, "species") + "':\n"
+            attributes += "X: " + last_selected_thing.x + "\n"
+            attributes += "Y: " + last_selected_thing.y + "\n"
+            attributes += "Z: " + last_selected_thing.z + "\n"
+            game.showLongText(attributes, DialogLayout.Full)
+        } else if (blockMenu.selectedMenuIndex() == 6) {
             // Ask to destroy it
             if (game.ask("Are you sure you want", "to remove this thing?")) {
                 last_selected_thing.destroy(effects.fountain, 100)
             }
         }
     } else {
-        // You clicked on background
+        // Nothing selected
         blockMenu.showMenu(["Cancel", "Add a thing...", "Clear everything"], MenuStyle.List, MenuLocation.FullScreen)
         wait_for_menu_select()
         blockMenu.closeMenu()
@@ -203,29 +208,30 @@ function summon_thing (x: number, y: number, species: string, regular_image: Ima
 let last_selected_thing: Sprite = null
 let last_overlapped_thing: Sprite = null
 let sprite_cursor: Sprite = sprites.create(img`
-    2 . . . . . . . . . 
-    f f . . . . . . . . 
-    f 1 f . . . . . . . 
-    f 1 1 f . . . . . . 
-    f 1 1 1 f . . . . . 
-    f 1 1 1 1 f . . . . 
-    f 1 1 1 1 1 f . . . 
-    f 1 1 1 1 1 1 f . . 
-    f 1 1 1 1 1 1 1 f . 
-    f 1 1 f 1 f f f f f 
-    f 1 f f 1 f . . . . 
-    f f . . f 1 f . . . 
-    f . . . f 1 f . . . 
-    . . . . . f 1 f . . 
-    . . . . . f 1 f . . 
-    . . . . . . f . . . 
-    `, SpriteKind.Player)
+    2 . . . . . . . . .
+    f f . . . . . . . .
+    f 1 f . . . . . . .
+    f 1 1 f . . . . . .
+    f 1 1 1 f . . . . .
+    f 1 1 1 1 f . . . .
+    f 1 1 1 1 1 f . . .
+    f 1 1 1 1 1 1 f . .
+    f 1 1 1 1 1 1 1 f .
+    f 1 1 f 1 f f f f f
+    f 1 f f 1 f . . . .
+    f f . . f 1 f . . .
+    f . . . f 1 f . . .
+    . . . . . f 1 f . .
+    . . . . . f 1 f . .
+    . . . . . . f . . .
+`, SpriteKind.Player)
 sprite_cursor.z = 1000
 controller.moveSprite(sprite_cursor, 100, 100)
 let sprite_cursor_pointer = sprites.create(img`
     f 
     `, SpriteKind.Pointer)
-sprite_cursor_pointer.z = 1000
+sprite_cursor_pointer.z = 1001
+sprite_cursor_pointer.setFlag(SpriteFlag.ShowPhysics, false)
 let selected_thing: boolean = false
 let selected_menu_option: boolean = false
 let enable_selection: boolean = true
@@ -233,14 +239,16 @@ let moving_something: boolean = false
 let shop_list_names: string[] = ["Cancel"]
 let shop_list: blockObject.BlockObject[] = [
     define_thing("Small Rock", img`
-        . . c c c c . .
-        . c b d d d c .
-        c b d d d d d c
-        c b b d d d d c
-        c b d b d d b c
-        c c b d b b b c
-        c c c b d d b c
-        c c b b c c c c
+        . . . . . . . . . .
+        . . . c c c c . . .
+        . . c b d d d c . .
+        . c b d d d d d c .
+        . c b b d d d d c .
+        . c b d b d d b c .
+        . c c b d b b b c .
+        . c c c b d d b c .
+        . c c b b c c c c .
+        . . . . . . . . . .
     `, img`
         . . 5 5 5 5 5 5 . .
         . 5 5 c c c c 5 5 .
@@ -254,22 +262,24 @@ let shop_list: blockObject.BlockObject[] = [
         5 5 5 5 5 5 5 5 5 5
     `),
     define_thing("Medium Rock", img`
-        . . . . . . . . b b b b b . . .
-        . . . . . . b b d d d d b b . .
-        . . . . . b d d d d d d d c . .
-        . . . . c d d d d d d d d c . .
-        . . . c b d d d d d d d b c c .
-        . . . c b b d d d d b c c c c .
-        . . c c d b b b c c c c c c c .
-        . . c c c d d d d c c d d d c c
-        . c d b c c b b c c d d d d d c
-        . c b d d b b b c c d d d d d c
-        . c c b b b b c b c b d d d b c
-        c b b c c c c c b b b b b c c c
-        c c b b c c c c c d d d d d b c
-        c c c c c c b b b b b c c c c c
-        c c c c c c c b b b b b c c c c
-        c c c c c c c c b b b b b c c c
+        ..................
+        .........bbbbb....
+        .......bbddddbb...
+        ......bdddddddc...
+        .....cddddddddc...
+        ....cbdddddddbcc..
+        ....cbbddddbcccc..
+        ...ccdbbbccccccc..
+        ...cccddddccdddcc.
+        ..cdbccbbccdddddc.
+        ..cbddbbbccdddddc.
+        ..ccbbbbcbcbdddbc.
+        .cbbcccccbbbbbccc.
+        .ccbbcccccdddddbc.
+        .ccccccbbbbbccccc.
+        .cccccccbbbbbcccc.
+        .ccccccccbbbbbccc.
+        ..................
     `, img`
         ........5555555...
         ......555bbbbb55..
@@ -291,20 +301,22 @@ let shop_list: blockObject.BlockObject[] = [
         555555555555555555
     `),
     define_thing("Big Rock", img`
-        ......ccccc.............
-        ....bb33bbbcc3..........
-        ...bbd33d3b333..........
-        ..bdddb33d3333c.........
-        .bddddb333333cbc........
-        .bddbb333333dcbc........
-        bddb333333333dbc........
-        bddb33333333333cccb.....
-        cdddddbb333cc33bdddbc...
-        cdddddd333cbbbbdddddcc..
-        cbddddd33bbbbbddddddccc.
-        cbbbddb33cbbbcdddddcbbcc
-        .cbbbbbbcbbbccbdddcbbccc
-        .cccbbbbbbbccccbbbbbcccc
+        ..........................
+        .......ccccc..............
+        .....bb33bbbcc3...........
+        ....bbd33d3b333...........
+        ...bdddb33d3333c..........
+        ..bddddb333333cbc.........
+        ..bddbb333333dcbc.........
+        .bddb333333333dbc.........
+        .bddb33333333333cccb......
+        .cdddddbb333cc33bdddbc....
+        .cdddddd333cbbbbdddddcc...
+        .cbddddd33bbbbbddddddccc..
+        .cbbbddb33cbbbcdddddcbbcc.
+        ..cbbbbbbcbbbccbdddcbbccc.
+        ..cccbbbbbbbccccbbbbbcccc.
+        ..........................
     `, img`
         ......5555555.............
         ....555ccccc5555..........
@@ -372,6 +384,7 @@ let shop_list: blockObject.BlockObject[] = [
         ....8776768.....
         .....87678......
         ......8768......
+        ................
     `, img`
         ................
         ................
@@ -424,54 +437,55 @@ let shop_list: blockObject.BlockObject[] = [
         .....555555.....
     `),
     define_thing("Medium Kelp", img`
-        ................
-        ................
-        ................
-        ................
-        ................
-        ................
-        ................
-        ................
-        ................
-        ................
-        ................
-        ................
-        ................
-        ................
-        ................
-        ................
-        .........888....
-        .......88668....
-        ......86688.....
-        .....8768.......
-        ....8778........
-        ....8778........
-        ...8778.........
-        ...8578.........
-        ...8558.........
-        ...8758......88.
-        ...87678....878.
-        ...87678...878..
-        ....87678.8768..
-        ....876768678...
-        .....87668778...
-        ......8668766...
-        .......8687678..
-        ........8667678.
-        ........8685756.
-        ....88..86665756
-        ...868..86685656
-        ..8668..86687678
-        .8668..868687678
-        .868..8688667678
-        8768.88886876778
-        8768.8888877678.
-        876688888676778.
-        87676888668778..
-        .876776868668...
-        .87766778868....
-        ..877667688.....
-        ...86767788.....
+        ..................
+        ..................
+        ..................
+        ..................
+        ..................
+        ..................
+        ..................
+        ..................
+        ..................
+        ..................
+        ..................
+        ..................
+        ..................
+        ..................
+        ..................
+        ..................
+        ..........888.....
+        ........88668.....
+        .......86688......
+        ......8768........
+        .....8778.........
+        .....8778.........
+        ....8778..........
+        ....8578..........
+        ....8558..........
+        ....8758......88..
+        ....87678....878..
+        ....87678...878...
+        .....87678.8768...
+        .....876768678....
+        ......87668778....
+        .......8668766....
+        ........8687678...
+        .........8667678..
+        .........8685756..
+        .....88..86665756.
+        ....868..86685656.
+        ...8668..86687678.
+        ..8668..868687678.
+        ..868..8688667678.
+        .8768.88886876778.
+        .8768.8888877678..
+        .876688888676778..
+        .87676888668778...
+        ..876776868668....
+        ..87766778868.....
+        ...877667688......
+        ....86767788......
+        ..................
     `, img`
         ..................
         ..................
@@ -524,54 +538,56 @@ let shop_list: blockObject.BlockObject[] = [
         ...5555555555.....
     `),
     define_thing("Big Kelp", img`
-        ....88..........
-        ....868.........
-        .....868........
-        ......868.......
-        .......868......
-        .......868......
-        ........868.....
-        ........868.....
-        ........8668....
-        ........8668....
-        ........8668....
-        ........8768....
-        ........8768....
-        .......86768....
-        .......87768....
-        .......6778.....
-        ......67676.....
-        ......67676.....
-        .....65656......
-        ....655656......
-        ....65656.......
-        ...876756.......
-        ..876776...8....
-        ..67678....8....
-        .876668...88....
-        .67868....86....
-        .86868...876....
-        868668..8768....
-        86868..87678....
-        86868..8766.....
-        86868.87678.....
-        86878.8766......
-        8787887678......
-        876768768.88....
-        876778668.678...
-        876676668..678..
-        .676778668..678.
-        .8766778668.6778
-        .877667688885678
-        ..87667768885656
-        ..86766778887856
-        ...8776677876876
-        ....877667768668
-        .....87766768668
-        ......877677668.
-        .......87667668.
-        ........876768..
-        ........87688...
+        ..................
+        .....88...........
+        .....868..........
+        ......868.........
+        .......868........
+        ........868.......
+        ........868.......
+        .........868......
+        .........868......
+        .........8668.....
+        .........8668.....
+        .........8668.....
+        .........8768.....
+        .........8768.....
+        ........86768.....
+        ........87768.....
+        ........6778......
+        .......67676......
+        .......67676......
+        ......65656.......
+        .....655656.......
+        .....65656........
+        ....876756........
+        ...876776...8.....
+        ...67678....8.....
+        ..876668...88.....
+        ..67868....86.....
+        ..86868...876.....
+        .868668..8768.....
+        .86868..87678.....
+        .86868..8766......
+        .86868.87678......
+        .86878.8766.......
+        .8787887678.......
+        .876768768.88.....
+        .876778668.678....
+        .876676668..678...
+        ..676778668..678..
+        ..8766778668.6778.
+        ..877667688885678.
+        ...87667768885656.
+        ...86766778887856.
+        ....8776677876876.
+        .....877667768668.
+        ......87766768668.
+        .......877677668..
+        ........87667668..
+        .........876768...
+        .........87688....
+        ..................
     `, img`
         ....5555..........
         ....58855.........
@@ -623,6 +639,162 @@ let shop_list: blockObject.BlockObject[] = [
         .......5587676855.
         ........58768855..
         ........5555555...
+    `),
+    define_thing("Single Coral", img`
+        ..................
+        .......cc.....cc..
+        ....cc.c3c.cc.c3c.
+        ...c36c33c.c3c63c.
+        ...c33336c.c3633c.
+        ....c6366ccc333c..
+        .....cc66c6c633c..
+        .....c3c6c33c66c..
+        .cc.c33cccc33c6c..
+        .c3cc366c3c36c6c..
+        .c3363636333ccccc.
+        ..c333c33636cc33c.
+        ...c33cc3336c336..
+        .ccc636cc636636cc.
+        .c33333ccc363333c.
+        ..cc66366c6336cc..
+        ....c63366663c....
+        ..................
+    `, img`
+        ......5555...5555.
+        ...5555cc55555cc55
+        ..55cc5c3c5cc5c3c5
+        ..5c36c33c5c3c63c5
+        ..5c33336c5c3633c5
+        ..55c6366ccc333c55
+        ...55cc66c6c633c5.
+        55555c3c6c33c66c5.
+        5cc5c33cccc33c6c5.
+        5c3cc366c3c36c6c55
+        5c3363636333ccccc5
+        55c333c33636cc33c5
+        555c33cc3336c33655
+        5ccc636cc636636cc5
+        5c33333ccc363333c5
+        55cc66366c6336cc55
+        .555c63366663c555.
+        ...555555555555...
+    `),
+    define_thing("Left Coral Bunch", img`
+        ..................
+        .......cc.....cc..
+        ....cc.c3c.cc.c3c.
+        ...c36c33c.c3c63c.
+        ...c33336c.c3633c.
+        ....c6366ccc333cc.
+        .....cc66c6c633cc.
+        .....c3c6c33cc6cc.
+        .cc.c33cccc3c36c6.
+        .c3cc366c3c3c33c3.
+        .c3363636333cc363.
+        ..c333c3363c6c633.
+        ...c33cc333c33c36.
+        .ccc636cc636c333c.
+        .c33333ccc36cc63c.
+        ..cc66366c63c666c.
+        ....c633666cc66cc.
+        ..................
+    `, img`
+        ......5555...5555.
+        ...5555cc55555cc55
+        ..55cc5c3c5cc5c3c5
+        ..5c36c33c5c3c63c5
+        ..5c33336c5c3633c5
+        ..55c6366ccc333cc5
+        ...55cc66c6c633cc5
+        55555c3c6c33cc6cc5
+        5cc5c33cccc3c36c65
+        5c3cc366c3c3c33c35
+        5c3363636333cc3635
+        55c333c3363c6c6335
+        555c33cc333c33c365
+        5ccc636cc636c333c5
+        5c33333ccc36cc63c5
+        55cc66366c63c666c5
+        .555c633666cc66cc5
+        ...555555555555555
+    `),
+    define_thing("Center Coral Bunch", img`
+        ..................
+        ......cc......cc..
+        ..cc..c3c..cc.c3c.
+        ..c3cc33c..c3c63c.
+        ..c33c36c..c3633c.
+        .ccc6366c.cc333cc.
+        .33cc66c6c6c633cc.
+        .633ccc36c33cc6cc.
+        .3633633ccc3c36c6.
+        .3c6333cc3c3c33c3.
+        .ccc33c36333cc363.
+        .ccc63c3363c6c633.
+        .63c636c333c33c36.
+        .6336663c636c333c.
+        .c63363ccc36cc63c.
+        .cc666cc6c63c666c.
+        .ccc66cc666cc66cc.
+        ..................
+    `, img`
+        .....5555....5555.
+        .55555cc555555cc55
+        .5cc55c3c55cc5c3c5
+        .5c3cc33c55c3c63c5
+        55c33c36c55c3633c5
+        5ccc6366c5cc333cc5
+        533cc66c6c6c633cc5
+        5633ccc36c33cc6cc5
+        53633633ccc3c36c65
+        53c6333cc3c3c33c35
+        5ccc33c36333cc3635
+        5ccc63c3363c6c6335
+        563c636c333c33c365
+        56336663c636c333c5
+        5c63363ccc36cc63c5
+        5cc666cc6c63c666c5
+        5ccc66cc666cc66cc5
+        555555555555555555
+    `),
+    define_thing("Right Coral Bunch", img`
+        ..................
+        ......cc......cc..
+        ..cc..c3c..cc.c3c.
+        ..c3cc33c..c3c63c.
+        ..c33c36c..c3633c.
+        .ccc6366c.cc333c..
+        .33cc66c6c6c633c..
+        .633ccc36c33c66c..
+        .3633633ccc33c6c..
+        .3c6333cc3c36c6c..
+        .ccc33c36333ccccc.
+        .ccc63c33636cc33c.
+        .63c636c3336c336..
+        .6336663c636636cc.
+        .c63363ccc363333c.
+        .cc666cc6c6336cc..
+        .ccc66cc66663c....
+        ..................
+    `, img`
+        .....5555....5555.
+        .55555cc555555cc55
+        .5cc55c3c55cc5c3c5
+        .5c3cc33c55c3c63c5
+        55c33c36c55c3633c5
+        5ccc6366c5cc333c55
+        533cc66c6c6c633c5.
+        5633ccc36c33c66c5.
+        53633633ccc33c6c5.
+        53c6333cc3c36c6c55
+        5ccc33c36333ccccc5
+        5ccc63c33636cc33c5
+        563c636c3336c33655
+        56336663c636636cc5
+        5c63363ccc363333c5
+        5cc666cc6c6336cc55
+        5ccc66cc66663c555.
+        555555555555555...
     `)
 ]
 blockMenu.setColors(1, 15)
@@ -642,6 +814,24 @@ forever(function() {
             sprite.setImage(sprites.readDataImage(sprite, "selected_image"))
         } else {
             sprite.setImage(sprites.readDataImage(sprite, "regular_image"))
+        }
+    }
+    pause(100)
+})
+// Keep the sprites within the tank
+forever(function() {
+    for (let sprite of sprites.allOfKind(SpriteKind.Thing)) {
+        if (sprite.top < 32) {
+            sprite.top = 32
+        }
+        if (sprite.right > 140) {
+            sprite.right = 140
+        }
+        if (sprite.bottom > 144) {
+            sprite.bottom = 144
+        }
+        if (sprite.left < 16) {
+            sprite.left = 16
         }
     }
     pause(100)
