@@ -5,6 +5,10 @@ namespace SpriteKind {
 namespace StrProp {
     export const name = StrProp.create()
 }
+namespace NumProp {
+    export const group = NumProp.create()
+    export const sub_group = NumProp.create()
+}
 namespace ImageProp {
     export const selected_image = ImageProp.create()
     export const regular_image = ImageProp.create()
@@ -152,7 +156,7 @@ controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
         } else if (blockMenu.selectedMenuIndex() == 1) {
             // Add a thing
             game.showLongText("Please select a thing to add!", DialogLayout.Bottom)
-            blockMenu.showMenu(shop_list_names, MenuStyle.List, MenuLocation.FullScreen)
+            blockMenu.showMenu(shop_list_groups, MenuStyle.List, MenuLocation.FullScreen)
             wait_for_menu_select()
             blockMenu.closeMenu()
             if (blockMenu.selectedMenuOption() == "Cancel") {
@@ -189,12 +193,20 @@ function wait_for_menu_select () {
     }
     controller.moveSprite(sprite_cursor, 100, 100)
 }
-function define_thing (name: string, regular_image: Image, selected_image: Image) {
+function define_thing (name: string, group: string, regular_image: Image, selected_image: Image) {
+    if (shop_list_groups.indexOf(group) == -1) {
+        shop_list_subgroups_index = 0
+        shop_list_groups_index += 1
+        shop_list_groups.push(group)
+    }
+    shop_list_subgroups.push(name)
     let thing_object: blockObject.BlockObject = blockObject.create()
     blockObject.setStringProperty(thing_object, StrProp.name, name)
+    blockObject.setNumberProperty(thing_object, NumProp.group, shop_list_groups_index)
+    blockObject.setNumberProperty(thing_object, NumProp.sub_group, shop_list_subgroups_index)
     blockObject.setImageProperty(thing_object, ImageProp.regular_image, regular_image)
     blockObject.setImageProperty(thing_object, ImageProp.selected_image, selected_image)
-    shop_list_names.push(name)
+    shop_list_subgroups_index += 1
     return thing_object
 }
 function summon_thing (x: number, y: number, species: string, regular_image: Image, selected_image: Image) {
@@ -236,9 +248,12 @@ let selected_thing: boolean = false
 let selected_menu_option: boolean = false
 let enable_selection: boolean = true
 let moving_something: boolean = false
-let shop_list_names: string[] = ["Cancel"]
+let shop_list_groups: string[] = ["Cancel"]
+let shop_list_subgroups: string[] = ["Back"]
+let shop_list_groups_index: number = 0
+let shop_list_subgroups_index: number = 0
 let shop_list: blockObject.BlockObject[] = [
-    define_thing("Small Rock", img`
+    define_thing("Small Rock", "Rocks", img`
         . . . . . . . . . .
         . . . c c c c . . .
         . . c b d d d c . .
@@ -261,7 +276,7 @@ let shop_list: blockObject.BlockObject[] = [
         5 c c b b c c c c 5
         5 5 5 5 5 5 5 5 5 5
     `),
-    define_thing("Medium Rock", img`
+    define_thing("Medium Rock", "Rocks", img`
         ..................
         .........bbbbb....
         .......bbddddbb...
@@ -300,7 +315,7 @@ let shop_list: blockObject.BlockObject[] = [
         5ccccccccbbbbbccc5
         555555555555555555
     `),
-    define_thing("Big Rock", img`
+    define_thing("Big Rock", "Rocks", img`
         ..........................
         .......ccccc..............
         .....bb33bbbcc3...........
@@ -335,7 +350,7 @@ let shop_list: blockObject.BlockObject[] = [
         .5cccbbbbbbbccccbbbbbcccc5
         .5555555555555555555555555
     `),
-    define_thing("Small Kelp", img`
+    define_thing("Small Kelp", "Kelp", img`
         ................
         ................
         ................
@@ -436,7 +451,7 @@ let shop_list: blockObject.BlockObject[] = [
         ....5587685.....
         .....555555.....
     `),
-    define_thing("Medium Kelp", img`
+    define_thing("Medium Kelp", "Kelp", img`
         ..................
         ..................
         ..................
@@ -537,7 +552,7 @@ let shop_list: blockObject.BlockObject[] = [
         ..55867677885.....
         ...5555555555.....
     `),
-    define_thing("Big Kelp", img`
+    define_thing("Big Kelp", "Kelp", img`
         ..................
         .....88...........
         .....868..........
@@ -640,7 +655,7 @@ let shop_list: blockObject.BlockObject[] = [
         ........58768855..
         ........5555555...
     `),
-    define_thing("Single Coral", img`
+    define_thing("Single Coral", "Coral", img`
         ..................
         .......cc.....cc..
         ....cc.c3c.cc.c3c.
@@ -679,7 +694,7 @@ let shop_list: blockObject.BlockObject[] = [
         .555c63366663c555.
         ...555555555555...
     `),
-    define_thing("Left Coral Bunch", img`
+    define_thing("Left Coral Bunch", "Coral", img`
         ..................
         .......cc.....cc..
         ....cc.c3c.cc.c3c.
@@ -718,7 +733,7 @@ let shop_list: blockObject.BlockObject[] = [
         .555c633666cc66cc5
         ...555555555555555
     `),
-    define_thing("Center Coral Bunch", img`
+    define_thing("Center Coral Bunch", "Coral", img`
         ..................
         ......cc......cc..
         ..cc..c3c..cc.c3c.
@@ -757,7 +772,7 @@ let shop_list: blockObject.BlockObject[] = [
         5ccc66cc666cc66cc5
         555555555555555555
     `),
-    define_thing("Right Coral Bunch", img`
+    define_thing("Right Coral Bunch", "Coral", img`
         ..................
         ......cc......cc..
         ..cc..c3c..cc.c3c.
