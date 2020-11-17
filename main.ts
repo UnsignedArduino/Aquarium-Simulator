@@ -156,17 +156,24 @@ controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
         } else if (blockMenu.selectedMenuIndex() == 1) {
             // Add a thing
             game.showLongText("Please select a thing to add!", DialogLayout.Bottom)
-            blockMenu.showMenu(shop_list_groups, MenuStyle.List, MenuLocation.FullScreen)
-            wait_for_menu_select()
-            blockMenu.closeMenu()
-            if (blockMenu.selectedMenuOption() == "Cancel") {
-                // Do nothing
-            } else {
-                let regular_image: Image = blockObject.getImageProperty(shop_list[blockMenu.selectedMenuIndex() - 1], ImageProp.regular_image)
-                let selected_image: Image = blockObject.getImageProperty(shop_list[blockMenu.selectedMenuIndex() - 1], ImageProp.selected_image)
+            let thing_to_summon: blockObject.BlockObject = complex_menu(shop_list_groups, shop_list)
+            if (thing_to_summon != null) {
+                let regular_image: Image = blockObject.getImageProperty(thing_to_summon, ImageProp.regular_image)
+                let selected_image: Image = blockObject.getImageProperty(thing_to_summon, ImageProp.selected_image)
                 let name: string = blockObject.getStringProperty(shop_list[blockMenu.selectedMenuIndex() - 1], StrProp.name)
                 summon_thing(sprite_cursor_pointer.x, sprite_cursor_pointer.top, name, regular_image, selected_image)
             }
+            // blockMenu.showMenu(shop_list_groups, MenuStyle.List, MenuLocation.FullScreen)
+            // wait_for_menu_select()
+            // blockMenu.closeMenu()
+            // if (blockMenu.selectedMenuOption() == "Cancel") {
+            //     // Do nothing
+            // } else {
+            //     let regular_image: Image = blockObject.getImageProperty(shop_list[blockMenu.selectedMenuIndex() - 1], ImageProp.regular_image)
+            //     let selected_image: Image = blockObject.getImageProperty(shop_list[blockMenu.selectedMenuIndex() - 1], ImageProp.selected_image)
+            //     let name: string = blockObject.getStringProperty(shop_list[blockMenu.selectedMenuIndex() - 1], StrProp.name)
+            //     summon_thing(sprite_cursor_pointer.x, sprite_cursor_pointer.top, name, regular_image, selected_image)
+            // }
         } else if (blockMenu.selectedMenuIndex() == 2) {
             // Ask to clear everything
             if (game.ask("Are you sure you want", "to clear everything?") && game.ask("Are you REALLY SURE?", "You can't go back!")) {
@@ -217,7 +224,7 @@ function summon_thing (x: number, y: number, species: string, regular_image: Ima
     sprites.setDataImage(sprite_thing, "regular_image", regular_image)
     sprites.setDataImage(sprite_thing, "selected_image", selected_image)
 }
-function complex_menu(group_list: string[], subgroup_list: string[]): blockObject.BlockObject {
+function complex_menu(group_list: string[], subgroup_list: blockObject.BlockObject[]): blockObject.BlockObject {
     while (true) {
         blockMenu.showMenu(group_list, MenuStyle.List, MenuLocation.FullScreen)
         wait_for_menu_select()
@@ -226,9 +233,9 @@ function complex_menu(group_list: string[], subgroup_list: string[]): blockObjec
             break
         } else {
             let subgroup_list_block: blockObject.BlockObject[] = []
-            let subgroup_list_string: string[] = []
+            let subgroup_list_string: string[] = ["Back"]
             for (let block_obj of subgroup_list) {
-                if (blockObject.getNumberProperty(block_obj, NumProp.group) == blockMenu.selectedMenuIndex() - 1) {
+                if (blockObject.getNumberProperty(block_obj, NumProp.group) == (blockMenu.selectedMenuIndex())) {
                     subgroup_list_block.push(block_obj)
                     subgroup_list_string.push(blockObject.getStringProperty(block_obj, StrProp.name))
                 }
@@ -236,7 +243,7 @@ function complex_menu(group_list: string[], subgroup_list: string[]): blockObjec
             blockMenu.showMenu(subgroup_list_string, MenuStyle.List, MenuLocation.FullScreen)
             wait_for_menu_select()
             blockMenu.closeMenu()
-            if (blockMenu.selectedMenuOption() == "Cancel") {
+            if (blockMenu.selectedMenuOption() == "Back") {
                 // Go back to beginning
             } else {
                 return subgroup_list_block[blockMenu.selectedMenuIndex() - 1]
