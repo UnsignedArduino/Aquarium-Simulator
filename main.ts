@@ -32,13 +32,55 @@ controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     if (last_overlapped_thing) {
         selected_thing = !(selected_thing)
     }
-    // If we have selected a thing and have overlapped something
-    if (selected_thing && last_overlapped_thing) {
+    // If we have overlapped something
+    if (last_overlapped_thing) {
         last_selected_thing = last_overlapped_thing
+    }
+    // If we have selected something
+    if (last_selected_thing && selected_thing) {
+        sprite_cursor.setImage(img`
+            2 . . . . . . . . .
+            f f . . . . . . . .
+            f 5 f . . . . . . .
+            f 5 5 f . . . . . .
+            f 5 5 5 f . . . . .
+            f 5 5 5 5 f . . . .
+            f 5 5 5 5 5 f . . .
+            f 5 5 5 5 5 5 f . .
+            f 5 5 5 5 5 5 5 f .
+            f 5 5 f 5 f f f f f
+            f 5 f f 5 f . . . .
+            f f . . f 5 f . . .
+            f . . . f 5 f . . .
+            . . . . . f 5 f . .
+            . . . . . f 5 f . .
+            . . . . . . f . . .
+        `)
     }
 })
 controller.A.onEvent(ControllerButtonEvent.Released, function () {
-    sprite_cursor.setImage(img`
+    // If we have selected something
+    if (last_selected_thing && selected_thing) {
+        sprite_cursor.setImage(img`
+            2 . . . . . . . . .
+            f f . . . . . . . .
+            f 5 f . . . . . . .
+            f 5 5 f . . . . . .
+            f 5 5 5 f . . . . .
+            f 5 5 5 5 f . . . .
+            f 5 5 5 5 5 f . . .
+            f 5 5 5 5 5 5 f . .
+            f 5 5 5 5 5 5 5 f .
+            f 5 5 f 5 f f f f f
+            f 5 f f 5 f . . . .
+            f f . . f 5 f . . .
+            f . . . f 5 f . . .
+            . . . . . f 5 f . .
+            . . . . . f 5 f . .
+            . . . . . . f . . .
+        `)
+    } else {
+        sprite_cursor.setImage(img`
         2 . . . . . . . . . 
         f f . . . . . . . . 
         f 1 f . . . . . . . 
@@ -55,7 +97,8 @@ controller.A.onEvent(ControllerButtonEvent.Released, function () {
         . . . . . f 1 f . . 
         . . . . . f 1 f . . 
         . . . . . . f . . . 
-        `)
+            `)
+    }
 })
 controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
     if (selected_thing) {
@@ -85,6 +128,7 @@ controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
                 for (let sprite of sprites.allOfKind(SpriteKind.Thing)) {
                     sprite.destroy(effects.fountain, 100)
                 }
+                last_selected_thing = null
             }
         }
     }
@@ -548,4 +592,15 @@ scene.cameraFollowSprite(sprite_cursor)
 game.onUpdate(function () {
     sprite_cursor_pointer.top = sprite_cursor.top
     sprite_cursor_pointer.left = sprite_cursor.left
+})
+// Highlight the selected sprite
+forever(function() {
+    for (let sprite of sprites.allOfKind(SpriteKind.Thing)) {
+        if (sprite == last_selected_thing && selected_thing) {
+            sprite.setImage(sprites.readDataImage(sprite, "selected_image"))
+        } else {
+            sprite.setImage(sprites.readDataImage(sprite, "regular_image"))
+        }
+    }
+    pause(100)
 })
