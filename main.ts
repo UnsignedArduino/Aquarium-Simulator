@@ -92,9 +92,16 @@ controller.A.onEvent(ControllerButtonEvent.Released, function () {
     }
 })
 controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
-    last_selected_thing.follow(sprite_cursor_pointer, 0)
-    moving_something = false
-    selected_thing = false
+    if (moving_something) {
+        moving_something = false
+        selected_thing = false
+    } else if (selected_thing) {
+        // Have thing follow the cursor until B is pressed
+        game.showLongText("Press [B] to place the sprite down", DialogLayout.Bottom)
+        moving_something = true
+    } else {
+        add_thing()
+    }
 })
 controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
     timer.background(function() {
@@ -160,18 +167,7 @@ controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
                     // Do nothing
                 } else if (blockMenu.selectedMenuIndex() == 1) {
                     // Add a thing
-                    game.showLongText("Please select a thing to add!", DialogLayout.Bottom)
-                    let thing_to_summon: blockObject.BlockObject = complex_menu(shop_list_groups, shop_list)
-                    if (thing_to_summon != null) {
-                        summon_thing(
-                            sprite_cursor_pointer.x, 
-                            sprite_cursor_pointer.top, 
-                            blockObject.getStringProperty(thing_to_summon, StrProp.name), 
-                            blockObject.getNumberProperty(thing_to_summon, NumProp.index),
-                            blockObject.getImageProperty(thing_to_summon, ImageProp.regular_image), 
-                            blockObject.getImageProperty(thing_to_summon, ImageProp.selected_image)
-                        )
-                    }
+                    add_thing()
                 } else if (blockMenu.selectedMenuIndex() == 2) {
                     not_implemented()
                 } else if (blockMenu.selectedMenuIndex() == 3) {
@@ -271,6 +267,20 @@ function overlapping_thing(sprite_a: Sprite) {
         }
     }
     return false
+}
+function add_thing() {
+    game.showLongText("Please select a thing to add!", DialogLayout.Bottom)
+    let thing_to_summon: blockObject.BlockObject = complex_menu(shop_list_groups, shop_list)
+    if (thing_to_summon != null) {
+        summon_thing(
+            sprite_cursor_pointer.x, 
+            sprite_cursor_pointer.top, 
+            blockObject.getStringProperty(thing_to_summon, StrProp.name), 
+            blockObject.getNumberProperty(thing_to_summon, NumProp.index),
+            blockObject.getImageProperty(thing_to_summon, ImageProp.regular_image), 
+            blockObject.getImageProperty(thing_to_summon, ImageProp.selected_image)
+        )
+    }
 }
 function not_implemented() {
     game.showLongText("This feature is not implemented! (Yet)", DialogLayout.Bottom)
