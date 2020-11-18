@@ -148,11 +148,12 @@ controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
                         // Ask to destroy it
                         if (game.ask("Are you sure you want", "to remove this thing?")) {
                             last_selected_thing.destroy(effects.fountain, 100)
+                            selected_thing = false
                         }
                     }
                 } else {
                     // Nothing selected
-                    blockMenu.showMenu(["Cancel", "Add a thing...", "Save aquarium", "Load aquarium", "Clear everything"], MenuStyle.List, MenuLocation.FullScreen)
+                    blockMenu.showMenu(["Cancel", "Add a thing...", "Save aquarium", "Load aquarium", "Clear saves", "Clear everything"], MenuStyle.List, MenuLocation.FullScreen)
                     wait_for_menu_select()
                     blockMenu.closeMenu()
                     if (blockMenu.selectedMenuIndex() == 0) {
@@ -161,10 +162,32 @@ controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
                         // Add a thing
                         add_thing()
                     } else if (blockMenu.selectedMenuIndex() == 2) {
-                        not_implemented()
+                        game.showLongText(
+                            "Successfully saved aquarium to name: '" + save_current_aquarium(
+                                game.askForString("Please input a save name:", 24)
+                            ) + "'!",
+                            DialogLayout.Bottom
+                        )
                     } else if (blockMenu.selectedMenuIndex() == 3) {
-                        not_implemented()
+                        if (sprites.allOfKind(SpriteKind.Thing).length > 0) {
+                            if (game.ask("Are you sure you want", "to clear everything?")) {
+                                for (let sprite of sprites.allOfKind(SpriteKind.Thing)) {
+                                    sprite.destroy(effects.fountain, 100)
+                                }
+                                last_selected_thing = null
+                            }
+                        }
+                        if (load_aquarium(game.askForString("Please input the save name:", 24))) {
+                            game.showLongText("Successfully loaded aquarium!", DialogLayout.Bottom)
+                        } else {
+                            game.showLongText("Oh no, something happened while loading the aquarium! Please make sure you typed in the correct name!", DialogLayout.Bottom)
+                        }
                     } else if (blockMenu.selectedMenuIndex() == 4) {
+                        if (game.ask("Are you sure you want", "to clear all saves?") && game.ask("Are you REALLY SURE?", "You can't go back!")) {
+                            blockSettings.clear()
+                            game.showLongText("Successfully cleared all saves!", DialogLayout.Bottom)
+                        }
+                    } else if (blockMenu.selectedMenuIndex() == 5) {
                         // Ask to clear everything
                         if (sprites.allOfKind(SpriteKind.Thing).length > 0) {
                             if (game.ask("Are you sure you want", "to clear everything?") && game.ask("Are you REALLY SURE?", "You can't go back!")) {
@@ -216,7 +239,7 @@ function define_thing (name: string, group: string, regular_image: Image, select
     shop_list_index += 1
     return thing_object
 }
-function summon_thing (x: number, y: number, species: string, index: number, regular_image: Image, selected_image: Image) {
+function summon_thing (x: number, y: number, species: string, index: number, regular_image: Image, selected_image: Image): Sprite {
     // Sumon the thing
     let sprite_thing: Sprite = sprites.create(regular_image, SpriteKind.Thing)
     sprite_thing.setPosition(x, y)
@@ -224,6 +247,7 @@ function summon_thing (x: number, y: number, species: string, index: number, reg
     sprites.setDataNumber(sprite_thing, "index", index)
     sprites.setDataImage(sprite_thing, "regular_image", regular_image)
     sprites.setDataImage(sprite_thing, "selected_image", selected_image)
+    return sprite_thing
 }
 function complex_menu(group_list: string[], subgroup_list: blockObject.BlockObject[]): blockObject.BlockObject {
     while (true) {
@@ -274,6 +298,54 @@ function add_thing() {
             blockObject.getImageProperty(thing_to_summon, ImageProp.selected_image)
         )
     }
+}
+function save_current_aquarium(name: string): string {
+    let sprite_counter: number = 0
+    let save_name: string = ""
+    for (let sprite of sprites.allOfKind(SpriteKind.Thing)) {
+        save_name = "aquarium_simulator_save_" + name + "_sprite_" + sprite_counter + "_"
+        console.logValue(save_name + "index", sprites.readDataNumber(sprite, "index"))
+        blockSettings.writeNumber(save_name + "index", sprites.readDataNumber(sprite, "index"))
+        console.logValue(save_name + "x", sprite.x)
+        blockSettings.writeNumber(save_name + "x", sprite.x)
+        console.logValue(save_name + "y", sprite.y)
+        blockSettings.writeNumber(save_name + "y", sprite.y)
+        console.logValue(save_name + "z", sprite.z)
+        blockSettings.writeNumber(save_name + "z", sprite.z)
+        sprite_counter += 1
+    }
+    sprite_counter += 1
+    console.logValue("aquarium_simulator_save_" + name + "_sprite_count", sprite_counter)
+    blockSettings.writeNumber("aquarium_simulator_save_" + name + "_sprite_count", sprite_counter)
+    return name
+}
+function load_aquarium(name: string): boolean {
+    let save_name: string = "aquarium_simulator_save_" + name + "_sprite_count"
+    if (blockSettings.exists(save_name)) {
+        console.logValue(save_name, blockSettings.readNumber(save_name))
+        let i: number = 0
+        // Here
+        // Problem is that while loop exits too early
+        for (let i = 0; i < blockSettings.readNumber(save_name); i++){
+            save_name = "aquarium_simulator_save_" + name + "_sprite_" + i + "_"
+            let index: number = blockSettings.readNumber(save_name + "index")
+            console.logValue(save_name + "index", blockSettings.readNumber(save_name + "index"))
+            console.logValue(save_name + "x", blockSettings.readNumber(save_name + "x"))
+            console.logValue(save_name + "y", blockSettings.readNumber(save_name + "y"))
+            console.logValue(save_name + "z", blockSettings.readNumber(save_name + "z"))
+            let sprite_thing = summon_thing(
+                blockSettings.readNumber(save_name + "x"), 
+                blockSettings.readNumber(save_name + "y"), 
+                blockObject.getStringProperty(shop_list[index], StrProp.name), 
+                index, 
+                blockObject.getImageProperty(shop_list[index], ImageProp.regular_image), 
+                blockObject.getImageProperty(shop_list[index], ImageProp.selected_image)
+            )
+            sprite_thing.z = blockSettings.readNumber(save_name + "z")
+        }
+        return true
+    }
+    return false
 }
 function not_implemented() {
     game.showLongText("This feature is not implemented! (Yet)", DialogLayout.Bottom)
