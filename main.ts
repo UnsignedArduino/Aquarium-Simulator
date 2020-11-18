@@ -8,6 +8,7 @@ namespace StrProp {
 namespace NumProp {
     export const group = NumProp.create()
     export const sub_group = NumProp.create()
+    export const index = NumProp.create()
 }
 namespace ImageProp {
     export const selected_image = ImageProp.create()
@@ -149,7 +150,7 @@ controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
         }
     } else {
         // Nothing selected
-        blockMenu.showMenu(["Cancel", "Add a thing...", "Clear everything"], MenuStyle.List, MenuLocation.FullScreen)
+        blockMenu.showMenu(["Cancel", "Add a thing...", "Save aquarium", "Load aquarium", "Clear everything"], MenuStyle.List, MenuLocation.FullScreen)
         wait_for_menu_select()
         blockMenu.closeMenu()
         if (blockMenu.selectedMenuIndex() == 0) {
@@ -159,29 +160,30 @@ controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
             game.showLongText("Please select a thing to add!", DialogLayout.Bottom)
             let thing_to_summon: blockObject.BlockObject = complex_menu(shop_list_groups, shop_list)
             if (thing_to_summon != null) {
-                let regular_image: Image = blockObject.getImageProperty(thing_to_summon, ImageProp.regular_image)
-                let selected_image: Image = blockObject.getImageProperty(thing_to_summon, ImageProp.selected_image)
-                let name: string = blockObject.getStringProperty(shop_list[blockMenu.selectedMenuIndex() - 1], StrProp.name)
-                summon_thing(sprite_cursor_pointer.x, sprite_cursor_pointer.top, name, regular_image, selected_image)
+                summon_thing(
+                    sprite_cursor_pointer.x, 
+                    sprite_cursor_pointer.top, 
+                    blockObject.getStringProperty(thing_to_summon, StrProp.name), 
+                    blockObject.getNumberProperty(thing_to_summon, NumProp.index),
+                    blockObject.getImageProperty(thing_to_summon, ImageProp.regular_image), 
+                    blockObject.getImageProperty(thing_to_summon, ImageProp.selected_image)
+                )
             }
-            // blockMenu.showMenu(shop_list_groups, MenuStyle.List, MenuLocation.FullScreen)
-            // wait_for_menu_select()
-            // blockMenu.closeMenu()
-            // if (blockMenu.selectedMenuOption() == "Cancel") {
-            //     // Do nothing
-            // } else {
-            //     let regular_image: Image = blockObject.getImageProperty(shop_list[blockMenu.selectedMenuIndex() - 1], ImageProp.regular_image)
-            //     let selected_image: Image = blockObject.getImageProperty(shop_list[blockMenu.selectedMenuIndex() - 1], ImageProp.selected_image)
-            //     let name: string = blockObject.getStringProperty(shop_list[blockMenu.selectedMenuIndex() - 1], StrProp.name)
-            //     summon_thing(sprite_cursor_pointer.x, sprite_cursor_pointer.top, name, regular_image, selected_image)
-            // }
         } else if (blockMenu.selectedMenuIndex() == 2) {
+            not_implemented()
+        } else if (blockMenu.selectedMenuIndex() == 3) {
+            not_implemented()
+        } else if (blockMenu.selectedMenuIndex() == 4) {
             // Ask to clear everything
-            if (game.ask("Are you sure you want", "to clear everything?") && game.ask("Are you REALLY SURE?", "You can't go back!")) {
-                for (let sprite of sprites.allOfKind(SpriteKind.Thing)) {
-                    sprite.destroy(effects.fountain, 100)
+            if (sprites.allOfKind(SpriteKind.Thing).length > 0) {
+                if (game.ask("Are you sure you want", "to clear everything?") && game.ask("Are you REALLY SURE?", "You can't go back!")) {
+                    for (let sprite of sprites.allOfKind(SpriteKind.Thing)) {
+                        sprite.destroy(effects.fountain, 100)
+                    }
+                    last_selected_thing = null
                 }
-                last_selected_thing = null
+            } else {
+                game.showLongText("Nothing to clear!", DialogLayout.Bottom)
             }
         }
     }
@@ -212,16 +214,20 @@ function define_thing (name: string, group: string, regular_image: Image, select
     blockObject.setStringProperty(thing_object, StrProp.name, name)
     blockObject.setNumberProperty(thing_object, NumProp.group, shop_list_groups_index)
     blockObject.setNumberProperty(thing_object, NumProp.sub_group, shop_list_subgroups_index)
+    blockObject.setNumberProperty(thing_object, NumProp.index, shop_list_index)
     blockObject.setImageProperty(thing_object, ImageProp.regular_image, regular_image)
     blockObject.setImageProperty(thing_object, ImageProp.selected_image, selected_image)
     shop_list_subgroups_index += 1
+    shop_list_index += 1
     return thing_object
 }
-function summon_thing (x: number, y: number, species: string, regular_image: Image, selected_image: Image) {
+function summon_thing (x: number, y: number, species: string, index: number, regular_image: Image, selected_image: Image) {
     // Sumon the thing
     let sprite_thing: Sprite = sprites.create(regular_image, SpriteKind.Thing)
     sprite_thing.setPosition(x, y)
     sprites.setDataString(sprite_thing, "species", species)
+    console.log(species)
+    sprites.setDataNumber(sprite_thing, "index", index)
     sprites.setDataImage(sprite_thing, "regular_image", regular_image)
     sprites.setDataImage(sprite_thing, "selected_image", selected_image)
 }
@@ -261,6 +267,9 @@ function overlapping_thing(sprite_a: Sprite) {
     }
     return false
 }
+function not_implemented() {
+    game.showLongText("This feature is not implemented! (Yet)", DialogLayout.Bottom)
+}
 let last_selected_thing: Sprite = null
 let last_overlapped_thing: Sprite = null
 let sprite_cursor: Sprite = sprites.create(img`
@@ -296,6 +305,7 @@ let shop_list_groups: string[] = ["Cancel"]
 let shop_list_subgroups: string[] = ["Back"]
 let shop_list_groups_index: number = 0
 let shop_list_subgroups_index: number = 0
+let shop_list_index: number = 0
 let shop_list: blockObject.BlockObject[] = [
     define_thing("Small Rock", "Rocks", img`
         . . . . . . . . . .
@@ -854,6 +864,162 @@ let shop_list: blockObject.BlockObject[] = [
         5cc666cc6c6336cc55
         5ccc66cc66663c555.
         555555555555555...
+    `),
+    define_thing("Single Sand Block", "Sand Blocks", img`
+        ..................
+        .....bbbb333b.....
+        ...3bdd333dddb3...
+        ..33dddddddddd33..
+        .33dddddddddddd33.
+        .3ddddddddddddddb.
+        .bdddddddd1dddddb.
+        .bddddd3ddddddd3b.
+        .bd333ddd3d333ddb.
+        .b3d3b3ddd3d3b3db.
+        .c333333b3333333c.
+        .c3333d3333333d3c.
+        .c3ccc33dd3ccc33c.
+        .cbbbbc3ddbbbbc3c.
+        .cbbbbbccbbbbbbcc.
+        ..ccbbccccbbbccc..
+        ...cccccccccccc...
+        ..................
+    `, img`
+        ....5555555555....
+        ..555bbbb333b555..
+        .553bdd333dddb355.
+        5533dddddddddd3355
+        533dddddddddddd335
+        53ddddddddddddddb5
+        5bdddddddd1dddddb5
+        5bddddd3ddddddd3b5
+        5bd333ddd3d333ddb5
+        5b3d3b3ddd3d3b3db5
+        5c333333b3333333c5
+        5c3333d3333333d3c5
+        5c3ccc33dd3ccc33c5
+        5cbbbbc3ddbbbbc3c5
+        5cbbbbbccbbbbbbcc5
+        55ccbbccccbbbccc55
+        .55cccccccccccc55.
+        ..55555555555555..
+    `),
+    define_thing("Left Edge Sand Block", "Sand Blocks", img`
+        ..................
+        .....bbb3333bbbb3.
+        ...3b3333ddddd333.
+        ..33ddddddddddddd.
+        .33dddddddddddddd.
+        .3dddddd1dddddddd.
+        .bdddd3dddddddddd.
+        .b333ddd3ddddd3dd.
+        .bd3b3dddd3ddddd3.
+        .bb33d3b33d333ddd.
+        .cccc33dd333b33b3.
+        .ccbbc3ddcc33d333.
+        .cbbbbccbbbcc33dd.
+        .cbbbbbbbbbbbc3dd.
+        .ccbbcccbbbbccccb.
+        ..cccccccbbcccccc.
+        ...cccccccccccccc.
+        ..................
+    `, img`
+        ....55555555555555
+        ..555bbb3333bbbb35
+        .553b3333ddddd3335
+        5533ddddddddddddd5
+        533dddddddddddddd5
+        53dddddd1dddddddd5
+        5bdddd3dddddddddd5
+        5b333ddd3ddddd3dd5
+        5bd3b3dddd3ddddd35
+        5bb33d3b33d333ddd5
+        5cccc33dd333b33b35
+        5ccbbc3ddcc33d3335
+        5cbbbbccbbbcc33dd5
+        5cbbbbbbbbbbbc3dd5
+        5ccbbcccbbbbccccb5
+        55cccccccbbcccccc5
+        .55cccccccccccccc5
+        ..5555555555555555
+    `),
+    define_thing("Center Sand Block", "Sand Blocks", img`
+        ..................
+        .333bbbb3333bbbb3.
+        .ddddd333ddddd333.
+        .dddddddddddddddd.
+        .dddddddddddddddd.
+        .dddddddddddddddd.
+        .1dddddd1dddddddd.
+        .ddddd3ddddddd3dd.
+        .d333ddd3d333ddd3.
+        .3d3b3ddd3d3b3ddd.
+        .333333b3333333b3.
+        .3333d3333333d333.
+        .3ccc33dd3ccc33dd.
+        .bbbbc3ddbbbbc3dd.
+        .bbbbbcccbbbbbccb.
+        .bbbcccccccbbcccc.
+        .cccccccccccccccc.
+        ..................
+    `, img`
+        555555555555555555
+        5333bbbb3333bbbb35
+        5ddddd333ddddd3335
+        5dddddddddddddddd5
+        5dddddddddddddddd5
+        5dddddddddddddddd5
+        51dddddd1dddddddd5
+        5ddddd3ddddddd3dd5
+        5d333ddd3d333ddd35
+        53d3b3ddd3d3b3ddd5
+        5333333b3333333b35
+        53333d3333333d3335
+        53ccc33dd3ccc33dd5
+        5bbbbc3ddbbbbc3dd5
+        5bbbbbcccbbbbbccb5
+        5bbbcccccccbbcccc5
+        5cccccccccccccccc5
+        555555555555555555
+    `),
+    define_thing("Right Edge Sand Block", "Sand Blocks", img`
+        ..................
+        .333bbbb3333b.....
+        .ddddd333ddd3b3...
+        .ddddddddddddd33..
+        .dddddddddddddd33.
+        .dddddddddddddddb.
+        .1ddddddddddddddb.
+        .dddddddd1d33dd3b.
+        .d333d3ddddbd3b3b.
+        .3d3b3dd3d333dd3b.
+        .3333dddd3dccdd3c.
+        .3333d3b333bbcccc.
+        .3ccc33dd3bbbbbcc.
+        .bbbbc3ddbbbbbbbc.
+        .bbbbccccbbbbbbcc.
+        .bbbcccccccbbbcc..
+        .cccccccccccccc...
+        ..................
+    `, img`
+        55555555555555....
+        5333bbbb3333b555..
+        5ddddd333ddd3b355.
+        5ddddddddddddd3355
+        5dddddddddddddd335
+        5dddddddddddddddb5
+        51ddddddddddddddb5
+        5dddddddd1d33dd3b5
+        5d333d3ddddbd3b3b5
+        53d3b3dd3d333dd3b5
+        53333dddd3dccdd3c5
+        53333d3b333bbcccc5
+        53ccc33dd3bbbbbcc5
+        5bbbbc3ddbbbbbbbc5
+        5bbbbccccbbbbbbcc5
+        5bbbcccccccbbbcc55
+        5cccccccccccccc55.
+        5555555555555555..
     `)
 ]
 blockMenu.setColors(1, 15)
@@ -887,8 +1053,8 @@ forever(function() {
         if (sprite.top < 32) {
             sprite.top = 32
         }
-        if (sprite.right > 140) {
-            sprite.right = 140
+        if (sprite.right > 240) {
+            sprite.right = 240
         }
         if (sprite.bottom > 144) {
             sprite.bottom = 144
