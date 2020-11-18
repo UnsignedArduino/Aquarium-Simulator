@@ -16,8 +16,10 @@ namespace ImageProp {
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     if (enable_selection && !moving_something) {
         // If we have actually overlapped a thing
-        if (last_overlapped_thing) {
-            selected_thing = !selected_thing
+        if (overlapping_thing(sprite_cursor_pointer)) {
+            selected_thing = true
+        } else {
+            selected_thing = false
         }
         // If we have overlapped something
         if (last_overlapped_thing && selected_thing) {
@@ -105,7 +107,6 @@ controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
         } else if (blockMenu.selectedMenuIndex() == 1) {
             // Have thing follow the cursor until B is pressed
             game.showLongText("Press [B] to place the sprite down", DialogLayout.Bottom)
-            last_selected_thing.follow(sprite_cursor_pointer, 256)
             moving_something = true
         } else if (blockMenu.selectedMenuIndex() == 2) {
             // Move the thing by X and Y number of pixels in respective axes
@@ -251,6 +252,14 @@ function complex_menu(group_list: string[], subgroup_list: blockObject.BlockObje
         }
     }
     return null
+}
+function overlapping_thing(sprite_a: Sprite) {
+    for (let sprite_b of sprites.allOfKind(SpriteKind.Thing)) {
+        if (sprite_a.overlapsWith(sprite_b)) {
+            return true
+        }
+    }
+    return false
 }
 let last_selected_thing: Sprite = null
 let last_overlapped_thing: Sprite = null
@@ -853,9 +862,13 @@ tiles.setTilemap(tilemap`level`)
 tiles.placeOnTile(sprite_cursor, tiles.getTileLocation(3, 3))
 scene.cameraFollowSprite(sprite_cursor)
 // The sprite cursor pointer is the thing we use for overlaps
-game.onUpdate(function () {
+forever(function () {
     sprite_cursor_pointer.top = sprite_cursor.top
     sprite_cursor_pointer.left = sprite_cursor.left
+})
+// Hid the pointer if we aren't at the cursor pointer (so cursor point is red)
+game.onUpdate(function() {
+    sprite_cursor_pointer.setFlag(SpriteFlag.Invisible, (sprite_cursor_pointer.top != sprite_cursor.top || sprite_cursor_pointer.left != sprite_cursor.left))
 })
 // Highlight the selected sprite
 forever(function() {
@@ -885,4 +898,12 @@ forever(function() {
         }
     }
     pause(100)
+})
+// Have last_selected_sprite follow cursor when moving it.
+forever(function() {
+    if (moving_something) {
+        last_selected_thing.setPosition(sprite_cursor_pointer.x, sprite_cursor_pointer.y)
+    } else {
+        pause(100)
+    }
 })
