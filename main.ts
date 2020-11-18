@@ -95,101 +95,94 @@ controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
     if (moving_something) {
         moving_something = false
         selected_thing = false
-    } else if (selected_thing) {
-        // Have thing follow the cursor until B is pressed
-        game.showLongText("Press [B] to place the sprite down", DialogLayout.Bottom)
-        moving_something = true
     } else {
-        add_thing()
-    }
-})
-controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
-    timer.background(function() {
-        if (!moving_something && !menu_opened) {
-            enable_selection = false
-            menu_opened = true
-            if (selected_thing) {
-                // Open menu for thing
-                blockMenu.showMenu(["Cancel", "Move...", "Move by", "Move to", "Set Z index", "Get attributes", "Remove"], MenuStyle.List, MenuLocation.FullScreen)
-                wait_for_menu_select()
-                blockMenu.closeMenu()
-                if (blockMenu.selectedMenuIndex() == 0) {
-                    // Do nothing
-                } else if (blockMenu.selectedMenuIndex() == 1) {
-                    // Have thing follow the cursor until B is pressed
-                    game.showLongText("Press [B] to place the sprite down", DialogLayout.Bottom)
-                    moving_something = true
-                } else if (blockMenu.selectedMenuIndex() == 2) {
-                    // Move the thing by X and Y number of pixels in respective axes
-                    let move_x = game.askForNumber("Enter the number of pixels to move: (X axis)", 3)
-                    let move_y = game.askForNumber("Enter the number of pixels to move: (Y axis)", 3)
-                    last_selected_thing.x += move_x
-                    last_selected_thing.y += move_y
-                    game.showLongText("Successfully moved thing!", DialogLayout.Bottom)
-                } else if (blockMenu.selectedMenuIndex() == 3) {
-                    // Move the thing to X and Y cordinates
-                    let set_x = game.askForNumber("Enter the X cordinate:", 3)
-                    let set_y = game.askForNumber("Enter the Y cordinate:", 3)
-                    last_selected_thing.x = set_x
-                    last_selected_thing.y = set_y
-                    game.showLongText("Successfully moved thing!", DialogLayout.Bottom)
-                } else if (blockMenu.selectedMenuIndex() == 4) {
-                    // Bring number dialog up and set Z index
-                    let z_index = game.askForNumber("Enter a Z index to set:", 3)
-                    if (z_index == -1) {
-                        game.showLongText("Canceled.", DialogLayout.Bottom)
-                    } else if (z_index < 0) {
-                        game.showLongText("Invalid Z index!", DialogLayout.Bottom)
-                    } else {
-                        last_selected_thing.z = z_index
-                        game.showLongText("Successfully set Z index!", DialogLayout.Bottom)
-                    }
-                } else if (blockMenu.selectedMenuIndex() == 5) {
-                    // Show attributes about it
-                    // Attributes shown: X, Y, Z
-                    let attributes = "Attributes about: '" + sprites.readDataString(last_selected_thing, "species") + "':\n"
-                    attributes += "X: " + last_selected_thing.x + "\n"
-                    attributes += "Y: " + last_selected_thing.y + "\n"
-                    attributes += "Z: " + last_selected_thing.z + "\n"
-                    game.showLongText(attributes, DialogLayout.Full)
-                } else if (blockMenu.selectedMenuIndex() == 6) {
-                    // Ask to destroy it
-                    if (game.ask("Are you sure you want", "to remove this thing?")) {
-                        last_selected_thing.destroy(effects.fountain, 100)
-                    }
-                }
-            } else {
-                // Nothing selected
-                blockMenu.showMenu(["Cancel", "Add a thing...", "Save aquarium", "Load aquarium", "Clear everything"], MenuStyle.List, MenuLocation.FullScreen)
-                wait_for_menu_select()
-                blockMenu.closeMenu()
-                if (blockMenu.selectedMenuIndex() == 0) {
-                    // Do nothing
-                } else if (blockMenu.selectedMenuIndex() == 1) {
-                    // Add a thing
-                    add_thing()
-                } else if (blockMenu.selectedMenuIndex() == 2) {
-                    not_implemented()
-                } else if (blockMenu.selectedMenuIndex() == 3) {
-                    not_implemented()
-                } else if (blockMenu.selectedMenuIndex() == 4) {
-                    // Ask to clear everything
-                    if (sprites.allOfKind(SpriteKind.Thing).length > 0) {
-                        if (game.ask("Are you sure you want", "to clear everything?") && game.ask("Are you REALLY SURE?", "You can't go back!")) {
-                            for (let sprite of sprites.allOfKind(SpriteKind.Thing)) {
-                                sprite.destroy(effects.fountain, 100)
-                            }
-                            last_selected_thing = null
+        timer.background(function() {
+            if (!menu_opened) {
+                enable_selection = false
+                menu_opened = true
+                if (selected_thing) {
+                    // Open menu for thing
+                    blockMenu.showMenu(["Cancel", "Move...", "Move by", "Move to", "Set Z index", "Get attributes", "Remove"], MenuStyle.List, MenuLocation.FullScreen)
+                    wait_for_menu_select()
+                    blockMenu.closeMenu()
+                    if (blockMenu.selectedMenuIndex() == 0) {
+                        // Do nothing
+                    } else if (blockMenu.selectedMenuIndex() == 1) {
+                        // Have thing follow the cursor until B is pressed
+                        game.showLongText("Press [B] to place the sprite down", DialogLayout.Bottom)
+                        moving_something = true
+                    } else if (blockMenu.selectedMenuIndex() == 2) {
+                        // Move the thing by X and Y number of pixels in respective axes
+                        let move_x = game.askForNumber("Enter the number of pixels to move: (X axis)", 3)
+                        let move_y = game.askForNumber("Enter the number of pixels to move: (Y axis)", 3)
+                        last_selected_thing.x += move_x
+                        last_selected_thing.y += move_y
+                        game.showLongText("Successfully moved thing!", DialogLayout.Bottom)
+                    } else if (blockMenu.selectedMenuIndex() == 3) {
+                        // Move the thing to X and Y cordinates
+                        let set_x = game.askForNumber("Enter the X cordinate:", 3)
+                        let set_y = game.askForNumber("Enter the Y cordinate:", 3)
+                        last_selected_thing.x = set_x
+                        last_selected_thing.y = set_y
+                        game.showLongText("Successfully moved thing!", DialogLayout.Bottom)
+                    } else if (blockMenu.selectedMenuIndex() == 4) {
+                        // Bring number dialog up and set Z index
+                        let z_index = game.askForNumber("Enter a Z index to set:", 3)
+                        if (z_index == -1) {
+                            game.showLongText("Canceled.", DialogLayout.Bottom)
+                        } else if (z_index < 0) {
+                            game.showLongText("Invalid Z index!", DialogLayout.Bottom)
+                        } else {
+                            last_selected_thing.z = z_index
+                            game.showLongText("Successfully set Z index!", DialogLayout.Bottom)
                         }
-                    } else {
-                        game.showLongText("Nothing to clear!", DialogLayout.Bottom)
+                    } else if (blockMenu.selectedMenuIndex() == 5) {
+                        // Show attributes about it
+                        // Attributes shown: X, Y, Z
+                        let attributes = "Attributes about: '" + sprites.readDataString(last_selected_thing, "species") + "':\n"
+                        attributes += "X: " + last_selected_thing.x + "\n"
+                        attributes += "Y: " + last_selected_thing.y + "\n"
+                        attributes += "Z: " + last_selected_thing.z + "\n"
+                        game.showLongText(attributes, DialogLayout.Full)
+                    } else if (blockMenu.selectedMenuIndex() == 6) {
+                        // Ask to destroy it
+                        if (game.ask("Are you sure you want", "to remove this thing?")) {
+                            last_selected_thing.destroy(effects.fountain, 100)
+                        }
+                    }
+                } else {
+                    // Nothing selected
+                    blockMenu.showMenu(["Cancel", "Add a thing...", "Save aquarium", "Load aquarium", "Clear everything"], MenuStyle.List, MenuLocation.FullScreen)
+                    wait_for_menu_select()
+                    blockMenu.closeMenu()
+                    if (blockMenu.selectedMenuIndex() == 0) {
+                        // Do nothing
+                    } else if (blockMenu.selectedMenuIndex() == 1) {
+                        // Add a thing
+                        add_thing()
+                    } else if (blockMenu.selectedMenuIndex() == 2) {
+                        not_implemented()
+                    } else if (blockMenu.selectedMenuIndex() == 3) {
+                        not_implemented()
+                    } else if (blockMenu.selectedMenuIndex() == 4) {
+                        // Ask to clear everything
+                        if (sprites.allOfKind(SpriteKind.Thing).length > 0) {
+                            if (game.ask("Are you sure you want", "to clear everything?") && game.ask("Are you REALLY SURE?", "You can't go back!")) {
+                                for (let sprite of sprites.allOfKind(SpriteKind.Thing)) {
+                                    sprite.destroy(effects.fountain, 100)
+                                }
+                                last_selected_thing = null
+                            }
+                        } else {
+                            game.showLongText("Nothing to clear!", DialogLayout.Bottom)
+                        }
                     }
                 }
+                enable_selection = true
+                menu_opened = false
             }
-            enable_selection = true
-            menu_opened = false
-        }
-    })
+        })
+    }
 })
 blockMenu.onMenuOptionSelected(function (option, index) {
     selected_menu_option = true
