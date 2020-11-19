@@ -314,7 +314,6 @@ function save_current_aquarium(name: string): string {
         blockSettings.writeNumber(save_name + "z", sprite.z)
         sprite_counter += 1
     }
-    sprite_counter += 1
     console.logValue("aquarium_simulator_save_" + name + "_sprite_count", sprite_counter)
     blockSettings.writeNumber("aquarium_simulator_save_" + name + "_sprite_count", sprite_counter)
     return name
@@ -326,7 +325,8 @@ function load_aquarium(name: string): boolean {
         let i: number = 0
         // Here
         // Problem is that while loop exits too early
-        for (let i = 0; i < blockSettings.readNumber(save_name); i++){
+        let num_sprites: number = blockSettings.readNumber(save_name)
+        for (let i = 0; i < num_sprites; i++){
             save_name = "aquarium_simulator_save_" + name + "_sprite_" + i + "_"
             let index: number = blockSettings.readNumber(save_name + "index")
             console.logValue(save_name + "index", blockSettings.readNumber(save_name + "index"))
